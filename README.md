@@ -10,8 +10,6 @@ This project is an implementation of the classic **Snake Game** written in 16-bi
 - [Requirements](#requirements)
 - [Setup and Execution](#setup-and-execution)
 - [How to Play](#how-to-play)
-- [Contributing](#contributing)
-- [License](#license)
 
 ## Features
 

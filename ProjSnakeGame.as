@@ -21,10 +21,10 @@ COL_POSITION	EQU     0d
 ROW_SHIFT	EQU 	8d
 COLUMN_SHIFT	EQU     8d
 SPACE           EQU     ' ' 
-DIR_C           EQU     0d
-DIR_B           EQU     1d
-DIR_E           EQU     2d
-DIR_D           EQU     3d
+DIR_U           EQU     0d
+DIR_D           EQU     1d
+DIR_L           EQU     2d
+DIR_R           EQU     3d
 TRUE            EQU     1d      
 FALSE           EQU     0d
 
@@ -41,6 +41,14 @@ POS_SCORE_2     EQU     0000000101001100b ; 01L x 76C
 POS_SCORE_3     EQU     0000000101001011b ; 01L x 75C
 POS_SCORE_4     EQU     0000000101001010b ; 01L x 74C
 
+ASCII           EQU     48d
+
+RIGHT_LIMIT     EQU     80d
+LEFT_LIMIT      EQU     0d
+UP_LIMIT        EQU     2d
+DOWN_LIMIT      EQU     23d
+
+SPEED           EQU     2d
 ;------------------------------------------------------------------------------
 ; ZONA II: definicao de variaveis
 ;          Pseudo-instrucoes : WORD - palavra (16 bits)
@@ -143,16 +151,16 @@ vetor                   TAB     40d
 cobra                   TAB     1560d     
 cauda                   WORD    0d
 
-Random_Var	WORD	A5A5h  ; 1010 0101 1010 0101
-RandomState     WORD	1d
+Random_Var	        WORD	A5A5h  ; 1010 0101 1010 0101
+RandomState             WORD	1d
 
-ColunaFruta     WORD    0d
-LinhaFruta      WORD    0d
-Tamanho         WORD    1d
+ColunaFruta             WORD    0d
+LinhaFruta              WORD    0d
+Tamanho                 WORD    1d
 
-StartBool       WORD    0d
+StartBool               WORD    0d
 
-Score           WORD    0d
+Score                   WORD    0d
 
 ;------------------------------------------------------------------------------
 ; ZONA II: definicao de tabela de interrupções
@@ -184,7 +192,7 @@ INT15            WORD    Timer
 ConfigureTimer: PUSH R1
                 PUSH R2
 
-                MOV R1, 2d
+                MOV R1, SPEED
                 MOV M[ TIMER_UNITS ], R1
                 
                 MOV R1, ON
@@ -198,7 +206,7 @@ ConfigureTimer: PUSH R1
 Timer:  PUSH R1
         PUSH R2
         PUSH R3
-     
+        
         MOV R1, M[gameover]
         CMP R1, TRUE
         JMP.Z EndTimer
@@ -215,7 +223,7 @@ EndTimer:       POP R3
                 RTI
 
 ;------------------------------------------------------------------------------
-; Rotina Start - verifica interrupção
+; Rotina Start - verifica a interrupção de inicio do jogo
 ;------------------------------------------------------------------------------
 
 START:                  PUSH R1
@@ -231,7 +239,7 @@ START:                  PUSH R1
 
 ChangeSnakeDirUp:       PUSH R1
 
-                        MOV R1, DIR_C
+                        MOV R1, DIR_U
                         MOV M[SnakeDir], R1
 
                         POP R1
@@ -239,7 +247,7 @@ ChangeSnakeDirUp:       PUSH R1
 
 ChangeSnakeDirDown:     PUSH R1
 
-                        MOV R1, DIR_B
+                        MOV R1, DIR_D
                         MOV M[SnakeDir], R1
 
                         POP R1
@@ -255,7 +263,7 @@ ChangeSnakeDirRight:    PUSH R1
 
 ChangeSnakeDirLeft:     PUSH R1
 
-                        MOV R1, DIR_E
+                        MOV R1, DIR_L
                         MOV M[SnakeDir], R1
 
                         POP R1
@@ -272,13 +280,13 @@ MovSnake:       PUSH R1
                 CALL Att
                 CALL Hit
 
-                CMP R1, DIR_C
+                CMP R1, DIR_U
                 CALL.Z Cima
 
-                CMP R1, DIR_B
+                CMP R1, DIR_D
                 CALL.Z Baixo
                 
-                CMP R1, DIR_E
+                CMP R1, DIR_L
                 CALL.Z Esq
 
                 CMP R1, DIR_D
@@ -329,9 +337,9 @@ Hit:    PUSH R1
         PUSH R5
         PUSH R6
 
-        MOV R1, M[cobra]       
+        MOV R1, M[cobra]         ;choque nela mesma
         MOV R3, 0d
-dead:   INC R3
+dead:   INC R3                        
         MOV R2, M[R3+cobra]
         CMP R1, R2
         JMP.Z  loser
@@ -339,24 +347,24 @@ dead:   INC R3
         JMP.NZ dead
 
         MOV R1, M[Coluna]
-        CMP R1, 80d
+        CMP R1, RIGHT_LIMIT
         JMP.Z  loser
         
         MOV R1, M[Coluna]
-        CMP R1, 0d
+        CMP R1, LEFT_LIMIT
         JMP.Z  loser
 
         MOV R1, M[Linha]
-        CMP R1, 23d
+        CMP R1, DOWN_LIMIT
         JMP.Z  loser
 
         MOV R1, M[Linha]
-        CMP R1, 2d
+        CMP R1, UP_LIMIT
         JMP.Z  loser
         JMP.NZ end
 
-loser:  MOV R1, TRUE
-        MOV M[gameover], R1
+loser:  MOV R1, TRUE                    ;imprime a tela de gameover
+        MOV M[ gameover ], R1
 
         MOV     R5, P0
         MOV     R6, R0
@@ -383,14 +391,14 @@ printCobra:     PUSH R1
                 PUSH R2
                 PUSH R3
 
-                MOV  R1, M[Linha]
-                MOV  R2, M[Coluna]
-                SHL  R1, 8d 
-                OR   R1, R2
+                MOV     R1, M[Linha]
+                MOV     R2, M[Coluna]
+                SHL     R1, 8d 
+                OR      R1, R2
                 
-                MOV M[ CURSOR ], R1
-                MOV R1, M[ CaracterCabeca ]
-                MOV M[ IO_WRITE ], R1
+                MOV     M[ CURSOR ], R1
+                MOV     R1, M[ CaracterCabeca ]
+                MOV     M[ IO_WRITE ], R1
 
 
                 MOV     R1, 0d
@@ -408,10 +416,10 @@ cbr:            MOV     R2, M [ R1 + cobra ]
                 MOV     R3, M[R1 + cobra]
                 MOV     M[cauda], R3
                  
-                MOV R1, M[cauda]
-                MOV R2, SPACE
-                MOV M[CURSOR], R1
-                MOV M[IO_WRITE], R2
+                MOV     R1, M[cauda]
+                MOV     R2, SPACE
+                MOV     M[CURSOR], R1
+                MOV     M[IO_WRITE], R2
 
 
                 POP R3
@@ -527,7 +535,7 @@ RandomV2:	        PUSH R1
 
 
 ;------------------------------------------------------------------------------
-; Função Geradora de Fruta
+; Função Geradora de Fruta - gera um local pra fruta 
 ;------------------------------------------------------------------------------
 GeraFruta:              PUSH R1
                         PUSH R2
@@ -554,7 +562,7 @@ GeraFruta:              PUSH R1
                         RET
 
 ;------------------------------------------------------------------------------
-; Rotina Print Fruta
+; Rotina Print Fruta - imprime a fruta
 ;------------------------------------------------------------------------------
 PrintFruta:             PUSH R1
                         PUSH R2
@@ -603,6 +611,7 @@ Eat:                    PUSH R1
 
                         INC     M [ Tamanho ]
                         INC     M [ Score ]
+
                         CALL printScore
                         CALL GeraFruta
 
@@ -612,7 +621,7 @@ not:                    POP R3
                         RET
 
 ;------------------------------------------------------------------------------
-; Rotina updatePos - atualiza as posições da cobra
+; Rotina updatePos - atualiza as posições da cobra de acordo com o movimento
 ;------------------------------------------------------------------------------
 
 updatePos:              PUSH R1
@@ -645,11 +654,7 @@ updt:                   MOV     R1, R2
 ;------------------------------------------------------------------------------
 ; Rotina TelaInicial - imprime a tela inicial
 ;------------------------------------------------------------------------------
-TelaInicial:            PUSH R1
-                        PUSH R2
-                        PUSH R3 
-                        PUSH R4
-                        PUSH R5
+TelaInicial:            PUSH R5
                         PUSH R6
                         
                         MOV     R5, I0
@@ -662,11 +667,11 @@ TelaInicial:            PUSH R1
 
                         POP     R6
                         POP     R5
-                        POP     R4
-                        POP     R3 
-                        POP     R2
-                        POP     R1
                         RET
+
+;------------------------------------------------------------------------------
+; Rotina VerificaInicio - aguarda a interrupção de inicio para começar
+;------------------------------------------------------------------------------
 
 VerificaInicio:         PUSH R1
                         PUSH R2
@@ -692,7 +697,7 @@ printScore:             PUSH R1
                         DIV     R1, R2
                         MOV     R3, POS_SCORE_4
                         MOV     M[ CURSOR ], R3
-                        ADD     R1, 48d
+                        ADD     R1, ASCII
                         MOV     M [ IO_WRITE ], R1
 
                         MOV     R1, R2
@@ -700,7 +705,7 @@ printScore:             PUSH R1
                         DIV     R1, R2
                         MOV     R3, POS_SCORE_3
                         MOV     M[ CURSOR ], R3
-                        ADD     R1, 48d
+                        ADD     R1, ASCII
                         MOV     M [ IO_WRITE ], R1
 
                         MOV     R1, R2
@@ -708,12 +713,12 @@ printScore:             PUSH R1
                         DIV     R1, R2
                         MOV     R3, POS_SCORE_2
                         MOV     M[ CURSOR ], R3
-                        ADD     R1, 48d
+                        ADD     R1, ASCII
                         MOV     M [ IO_WRITE ], R1
 
                         MOV     R3, POS_SCORE_1
                         MOV     M[ CURSOR ], R3
-                        ADD     R2, 48d
+                        ADD     R2, ASCII
                         MOV     M [ IO_WRITE ], R2
 
                         POP R3
@@ -742,13 +747,14 @@ Initialize:     INC R1
                 JMP.NZ Initialize
         
         CALL TelaInicial
-        CALL VerificaInicio       
+        CALL VerificaInicio   
+
 Go:     CALL printTela      
         CALL GeraFruta
         CALL ConfigureTimer
 
 
 
-Cycle: 			BR		Cycle	
+Cycle: 		BR		Cycle	
 Halt:           BR		Halt
 

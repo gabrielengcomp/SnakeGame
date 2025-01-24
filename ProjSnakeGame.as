@@ -48,7 +48,12 @@ LEFT_LIMIT      EQU     0d
 UP_LIMIT        EQU     2d
 DOWN_LIMIT      EQU     23d
 
-SPEED           EQU     2d
+SPEED           EQU     3d
+
+NUMBER_THOUSAND EQU     1000d
+NUMBER_HUNDRED  EQU     100d
+NUMBER_TEN      EQU     10d
+
 ;------------------------------------------------------------------------------
 ; ZONA II: definicao de variaveis
 ;          Pseudo-instrucoes : WORD - palavra (16 bits)
@@ -152,7 +157,7 @@ cobra                   TAB     1560d
 cauda                   WORD    0d
 
 Random_Var	        WORD	A5A5h  ; 1010 0101 1010 0101
-RandomState             WORD	1d
+RandomState             WORD	666d
 
 ColunaFruta             WORD    0d
 LinhaFruta              WORD    0d
@@ -170,7 +175,7 @@ INT0             WORD    ChangeSnakeDirUp
 INT1             WORD    ChangeSnakeDirLeft  
 INT2             WORD    ChangeSnakeDirDown
 INT3             WORD    ChangeSnakeDirRight
-INT4             WORD    START
+INT4             WORD    Start
 
                  ORIG    FE0Fh
 INT15            WORD    Timer
@@ -226,7 +231,7 @@ EndTimer:       POP R3
 ; Rotina Start - verifica a interrupção de inicio do jogo
 ;------------------------------------------------------------------------------
 
-START:                  PUSH R1
+Start:                  PUSH R1
 
                         MOV R1, TRUE
                         MOV M[StartBool], R1
@@ -255,7 +260,7 @@ ChangeSnakeDirDown:     PUSH R1
 
 ChangeSnakeDirRight:    PUSH R1
 
-                        MOV R1, DIR_D
+                        MOV R1, DIR_R
                         MOV M[SnakeDir], R1
 
                         POP R1
@@ -268,16 +273,16 @@ ChangeSnakeDirLeft:     PUSH R1
 
                         POP R1
                         RTI
-
+;------------------------------------------------------------------------------
+; Rotina MovSnake - verifica se bateu em algo e printa a tela de over
+;------------------------------------------------------------------------------
 
 MovSnake:       PUSH R1
-                PUSH R2
-                PUSH R3
 
                 MOV R1, M[SnakeDir]
                 
                 CALL printCobra
-                CALL Att
+                CALL updatePos
                 CALL Hit
 
                 CMP R1, DIR_U
@@ -289,37 +294,41 @@ MovSnake:       PUSH R1
                 CMP R1, DIR_L
                 CALL.Z Esq
 
-                CMP R1, DIR_D
+                CMP R1, DIR_R
                 CALL.Z Dir
                 
-                
-                
-                POP R3
-                POP R2
                 POP R1
                 RET
-
+;------------------------------------------------------------------------------
+; Rotina direita - cobra andando pra direita
+;------------------------------------------------------------------------------
 Dir:    PUSH R1     
         
         INC M[Coluna]
 
         POP R1
         RET
-
+;------------------------------------------------------------------------------
+; Rotina esquerda - cobra andando pra esquerda
+;------------------------------------------------------------------------------
 Esq:    PUSH R1
        
         DEC M[Coluna]
 
         POP R1
         RET
-
+;------------------------------------------------------------------------------
+; Rotina baixo - cobra andando pra baixo
+;------------------------------------------------------------------------------
 Baixo:  PUSH R1
                      
         INC M[Linha]
 
         POP R1
         RET
-
+;------------------------------------------------------------------------------
+; Rotina cima - cobra andando pra cima
+;------------------------------------------------------------------------------
 Cima:   PUSH R1
 
         DEC M[Linha]
@@ -373,7 +382,7 @@ loser:  MOV R1, TRUE                    ;imprime a tela de gameover
         MOV     M[ColumnIndex], R0
         MOV     M[RowIndex], R0
 
-        JMP exec
+        CALL printTela
 
 end:    POP R6
         POP R5
@@ -427,16 +436,10 @@ cbr:            MOV     R2, M [ R1 + cobra ]
                 POP R1
                 RET
         
-        
-
 ;------------------------------------------------------------------------------
-; Rotina Print Tela - imprime a tela de jogo
-;------------------------------------------------------------------------------
-printTela:      PUSH R1
-                PUSH R2
-                PUSH R3 
-                PUSH R4
-                PUSH R5
+; Rotina Print Tela do jogo - imprime a tela de jogo
+;------------------------------------------------------------------------------                
+printJogo:      PUSH R5
                 PUSH R6
 
                 MOV     R5, L0
@@ -445,6 +448,23 @@ printTela:      PUSH R1
                 MOV     M[TextIndex], R0
                 MOV     M[ColumnIndex], R0
                 MOV     M[RowIndex], R0
+
+                CALL printTela
+
+                POP     R6
+                POP     R5
+                RET
+        
+
+;------------------------------------------------------------------------------
+; Rotina Print Tela - imprime qualquer tela
+;------------------------------------------------------------------------------
+printTela:      PUSH R1
+                PUSH R2
+                PUSH R3 
+                PUSH R4
+                PUSH R5
+                PUSH R6
 
 exec:           MOV     R1, M[ TextIndex ]
                 ADD     R1, R5
@@ -663,8 +683,8 @@ TelaInicial:            PUSH R5
                         MOV     M[TextIndex], R0
                         MOV     M[ColumnIndex], R0
                         MOV     M[RowIndex], R0
-                        JMP     exec   
-
+                        CALL    printTela  
+                       
                         POP     R6
                         POP     R5
                         RET
@@ -693,7 +713,7 @@ printScore:             PUSH R1
                         PUSH R3
 
                         MOV     R1, M[Score]
-                        MOV     R2, 1000d
+                        MOV     R2, NUMBER_THOUSAND
                         DIV     R1, R2
                         MOV     R3, POS_SCORE_4
                         MOV     M[ CURSOR ], R3
@@ -701,7 +721,7 @@ printScore:             PUSH R1
                         MOV     M [ IO_WRITE ], R1
 
                         MOV     R1, R2
-                        MOV     R2, 100d
+                        MOV     R2, NUMBER_HUNDRED
                         DIV     R1, R2
                         MOV     R3, POS_SCORE_3
                         MOV     M[ CURSOR ], R3
@@ -709,7 +729,7 @@ printScore:             PUSH R1
                         MOV     M [ IO_WRITE ], R1
 
                         MOV     R1, R2
-                        MOV     R2, 10d
+                        MOV     R2, NUMBER_TEN
                         DIV     R1, R2
                         MOV     R3, POS_SCORE_2
                         MOV     M[ CURSOR ], R3
@@ -749,7 +769,7 @@ Initialize:     INC R1
         CALL TelaInicial
         CALL VerificaInicio   
 
-Go:     CALL printTela      
+Go:     CALL printJogo      
         CALL GeraFruta
         CALL ConfigureTimer
 
@@ -757,4 +777,3 @@ Go:     CALL printTela
 
 Cycle: 		BR		Cycle	
 Halt:           BR		Halt
-
